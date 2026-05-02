@@ -1,10 +1,9 @@
 name: Java CI with Automated Review
-
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "master" ]
   pull_request:
-    branches: [ "main" ] # Trigger khi có PR hướng vào main
+    branches: [ "master" ] # Sửa lại thành master để khớp với Repository của bạn
 
 jobs:
   build:
