@@ -1,48 +1,41 @@
-name: Java CI with JaCoCo Coverage
+name: Java CI with Automated Review
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ "master" ]
+    branches: [ "main" ] # Trigger khi có PR hướng vào main
 
 jobs:
   build:
-    strategy:
-      matrix:
-        # Bạn có thể giữ matrix hoặc rút gọn lại 1 OS tùy ý
-        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ubuntu-latest
 
-    runs-on: ${{ matrix.os }}
+    # BẮT BUỘC: Cấp quyền viết để Bot có thể đăng bình luận (comment) vào Pull Request
+    permissions:
+      contents: read
+      pull-requests: write
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
-          cache: maven
+          cache: 'maven'
 
-      - name: Build and Verify with JaCoCo
-        # Sử dụng verify thay vì package để chạy bước jacoco:check (mốc 80%)
+      # Bước 1: Chạy lệnh build, test và checkstyle của Maven.
+      # Chắc chắn bước này sẽ văng lỗi (FAIL) vì ta đang cố tình viết sai ở file MathService.java
+      - name: Run Checkstyle and Fail Build
         run: mvn clean verify
 
-      - name: Upload JAR Artifact
-        if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v4
+      # Bước 2: Tích hợp Bot đăng comment phản hồi
+      - name: Checkstyle Inline Feedback
+        if: always() # RẤT QUAN TRỌNG: Đảm bảo dù bước trên bị FAIL, Bot vẫn chạy để thả comment
+        uses: dbelyaev/action-checkstyle@master
         with:
-          name: banking-app-jar
-          path: target/*.jar
-
-      # BÀI 5: TRÍCH XUẤT BÁO CÁO ĐỘ BAO PHỦ
-      - name: Upload JaCoCo Coverage Report
-        # Chỉ cần lấy báo cáo từ 1 môi trường (Ubuntu) để xem
-        if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v4
-        with:
-          name: jacoco-report
-          # Đường dẫn mặc định của JaCoCo sau khi chạy lệnh report
-          path: target/site/jacoco/
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          checkstyle_config: google_checks.xml
+          level: error
+          reporter: github-pr-review # Cấu hình để bot review trực tiếp trên từng dòng code của PR
