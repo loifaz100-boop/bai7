@@ -1,0 +1,48 @@
+name: Java CI with JaCoCo Coverage
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        # Bạn có thể giữ matrix hoặc rút gọn lại 1 OS tùy ý
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build and Verify with JaCoCo
+        # Sử dụng verify thay vì package để chạy bước jacoco:check (mốc 80%)
+        run: mvn clean verify
+
+      - name: Upload JAR Artifact
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: banking-app-jar
+          path: target/*.jar
+
+      # BÀI 5: TRÍCH XUẤT BÁO CÁO ĐỘ BAO PHỦ
+      - name: Upload JaCoCo Coverage Report
+        # Chỉ cần lấy báo cáo từ 1 môi trường (Ubuntu) để xem
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          # Đường dẫn mặc định của JaCoCo sau khi chạy lệnh report
+          path: target/site/jacoco/
